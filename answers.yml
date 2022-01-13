@@ -1,0 +1,18 @@
+FirstName: Alessio
+LastName: Bonaguro
+MatriculationNumber: 201522
+AcademicYear: 2019-2020
+GitHubUrl: https://github.com/AlessioBonaguro/dncs-lab.git
+Subnets:
+  HostsA:
+    RequiredAddresses: 92
+    SubnetAddress: 192.168.224.2
+    SubnetPrefixLength: 25
+  HostsB:
+    RequiredAddresses: 513
+    SubnetAddress: 192.168.208.2
+    SubnetPrefixLength: 22
+  Hub:
+    RequiredAddresses: 388
+    SubnetAddress: 192.168.64.2
+    SubnetPrefixLength: 23
