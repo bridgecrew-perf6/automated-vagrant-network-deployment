@@ -1,5 +1,6 @@
 # Startup commands for host-A go here
 sudo apt update
+sudo apt install ntpdate
 sudo ip link set enp0s8 up
 echo "Host-A -> net set up..\n"
 sudo /bin/su -c \

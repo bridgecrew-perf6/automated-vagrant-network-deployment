@@ -22,7 +22,7 @@ Vagrant.configure("2") do |config|
     router1.vm.hostname = "router-1"
 	router1.vm.network "private_network", virtualbox__intnet: "broadcast_north", auto_config: false
     router1.vm.network "private_network", virtualbox__intnet: "broadcast_south", auto_config: false           # ens0s9
-    #router1.vm.network "private_network", virtualbox__intnet: "broadcast_host_b", auto_config: false           # ens0s10
+    router1.vm.network "private_network", virtualbox__intnet: "broadcast_ntp", auto_config: false           # ens0s10
     router1.vm.provision "shell", path: "router_1.sh"
     router1.vm.provision "shell", path: "router_1_always.sh", run: "always"
     router1.vm.provider "virtualbox" do |vb|
@@ -91,6 +91,18 @@ Vagrant.configure("2") do |config|
     hostd.vm.provision "shell", path: "host_d.sh"
     hostd.vm.provider "virtualbox" do |vb|
       vb.memory = 256
+    end
+  end
+  config.vm.define "ntp_server" do |ntp_server|
+    ntp_server.vm.box = "ubuntu/bionic64"
+    ntp_server.vm.hostname = "ntpserver"
+    ntp_server.vm.network "private_network", virtualbox__intnet: "broadcast_ntp", auto_config: false
+    ntp_server.vm.network "public_network"
+	ntp_server.vm.provision "shell", path: "common.sh"
+    ntp_server.vm.provision "shell", path: "ntp_server.sh"
+    ntp_server.vm.provision "shell", path: "ntp_server_always.sh", run: "always"
+    ntp_server.vm.provider "virtualbox" do |vb|
+      vb.memory = 512                     
     end
   end
 end
