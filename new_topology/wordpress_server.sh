@@ -5,13 +5,12 @@ sudo apt install -y docker.io
 sudo groupadd docker
 sudo usermod -aG docker vagrant
 newgrp docker
-docker pull cturra/ntp
-
+docker pull mariadb:latest
+docker pull wordpress
 sudo ip link set enp0s8 up
-sudo ip link set enp0s9 up
-echo "NTP_server -> net set up..\n"
+echo "wordpress_server -> net set up..\n"
 sudo /bin/su -c \
-"cat << EOF > /etc/netplan/51-ntp-netConf.yaml
+"cat << EOF > /etc/netplan/51-wordpress-netConf.yaml
 network:
    ethernets:
        # enp0s8:
@@ -25,6 +24,6 @@ network:
    version: 2
 EOF
 "
-echo "NTP_server -> static IP set..\n"
-echo "NTP_server -> Route add..\n"
+echo "wordpress_server -> static IP set..\n"
+echo "wordpress_server -> Route add..\n"
 sudo netplan apply

@@ -12,13 +12,13 @@ network:
    ethernets:
        enp0s8:
            dhcp4: false
-           addresses: [192.168.10.1/24]
+           addresses: [192.168.0.1/24]
        enp0s9:
            dhcp4: false
-           addresses: [192.168.0.1/24]
-       enp0s10:
-           dhcp4: false
-           addresses: [192.168.20.1/24]
+           addresses: [192.168.10.1/25]
+       # enp0s10:
+           # dhcp4: false
+           # addresses: [192.168.20.1/24]
    version: 2
 EOF
 "
