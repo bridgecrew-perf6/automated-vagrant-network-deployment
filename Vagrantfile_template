@@ -1,4 +1,3 @@
-
 Vagrant.configure("2") do |config|
   config.vm.box_check_update = false
   config.ssh.insert_key = false
@@ -14,32 +13,13 @@ Vagrant.configure("2") do |config|
   config.vm.define "switch" do |switch|
     switch.vm.box = "ubuntu/bionic64"
     switch.vm.hostname = "switch"
-    switch.vm.network "private_network", virtualbox__intnet: "broadcast_host_a", auto_config: false           # ens0s9
-    switch.vm.network "private_network", virtualbox__intnet: "broadcast_host_b", auto_config: false           # ens0s10
+    switch.vm.network "private_network", virtualbox__intnet: "broadcast_${hostname1}", auto_config: false           # ens0s9
+    switch.vm.network "private_network", virtualbox__intnet: "broadcast_${hostname2}", auto_config: false           # ens0s10
     switch.vm.provision "shell", path: "switch.sh"
     switch.vm.provision "shell", path: "switch_always.sh", run: "always"
     switch.vm.provider "virtualbox" do |vb|
       vb.memory = 256
     end
   end
-  config.vm.define "${hostname1}" do |hosta|
-    hosta.vm.box = "ubuntu/bionic64"
-    hosta.vm.hostname = "${hostname1}"
-    hosta.vm.network "private_network", virtualbox__intnet: "broadcast_host_a", auto_config: false
-    hosta.vm.provision "shell", path: "common.sh"
-    hosta.vm.provision "shell", path: "host_a.sh"
-    hosta.vm.provider "virtualbox" do |vb|
-      vb.memory = 256
-    end
-  end
-  config.vm.define "${hostname2}" do |hostb|
-    hostb.vm.box = "ubuntu/bionic64"
-    hostb.vm.hostname = "${hostname2}"
-    hostb.vm.network "private_network", virtualbox__intnet: "broadcast_host_b", auto_config: false
-    hostb.vm.provision "shell", path: "common.sh"
-    hostb.vm.provision "shell", path: "host_b.sh"
-    hostb.vm.provider "virtualbox" do |vb|
-      vb.memory = 256
-    end
-  end
+  ${hosts}
 end
