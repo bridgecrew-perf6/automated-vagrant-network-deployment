@@ -17,24 +17,31 @@ def import_template(fpath="Vagrantfile_template"):
         text = t.read()
         template = string.Template(text)
     t.close()
-    return text, template
+    return template
 
 def export_config(config, fpath="Vagrantfile_generated"):
     with open(fpath, "w") as output:
         output.write(config)
     output.close()
 
-def generate_component_templates(n_hosts, host_names):
+def generate_component_templates(n_hosts, n_switches, host_names, switch_names):
 
-    # Import host template
-    host_text, host_template = import_template("host_template")
-    
-    output = ""
+    # Generating Hosts
+    gen_hosts = ""
+    gen_switches = ""
+
+    host_template = import_template("host_template")    
     for i in range(0, n_hosts):
-        curr_template = host_template.substitute(**host_names[i])
-        output += curr_template + "\n"
-    return output
+        gen_hosts += host_template.substitute(**host_names[i]) + "\n"
 
+    # Generating Switches
+    switch_template = import_template("switch_template")
+    for i in range(0, n_switches):
+        gen_switches += switch_template.substitute(**switch_names[i]) + "\n"
+
+    #TODO multiply port lines by n_switches
+    #TODO cofig lines are not indented correctly
+    return gen_hosts, gen_switches
 
 if __name__ == "__main__":
 
@@ -45,20 +52,23 @@ if __name__ == "__main__":
     # n_hosts = input("Enter number of hosts: (Default=2) ")
     # n_hosts = int(n_hosts) if n_hosts != '' else 2
     n_hosts = 2
+    n_switches = 1
 
     # Generate host names ( {'hostname1': 'host-a', 'hostname2': 'host-b'} )
     host_names = []
+    switch_names = []
     for i in range(0, n_hosts):
         host_names.append({"hostname": "host_" + chr(ord('a') + i), "host_variable_name" : "host" + chr(ord('a') + i)})
+        switch_names.append({"switchname": "switch_" + chr(ord('a') + i), "switch_variable_name" : "switch" + chr(ord('a') + i)})
 
     # Import empty template to be populated with components
-    text, template = import_template()
+    template = import_template()
     
     # Generate components (Routers, Switches, Hosts)
-    gen_text = generate_component_templates(n_hosts, host_names)
+    gen_hosts, gen_switches = generate_component_templates(n_hosts, n_switches, host_names, switch_names)
 
     # Adding components to the config template
-    data = {'hosts': gen_text}
+    data = {'hosts': gen_hosts, 'switches': gen_switches}
     final_config = template.substitute(**data)
 
     # Export the final config
