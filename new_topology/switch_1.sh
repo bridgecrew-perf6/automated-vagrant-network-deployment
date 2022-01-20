@@ -12,5 +12,5 @@ echo "Switch -> IP packet forward active..\n"
 sudo ovs-vsctl add-br my_bridge
 sudo ovs-vsctl add-port my_bridge enp0s8
 sudo ovs-vsctl add-port my_bridge enp0s9
-sudo ovs-vsctl add-port my_bridge enp0s10
+# sudo ovs-vsctl add-port my_bridge enp0s10
 echo "Switch -> Port assign to VLAN..\n"
