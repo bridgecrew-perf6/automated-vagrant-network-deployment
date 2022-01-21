@@ -1,1 +1,1 @@
-${switch_variable_name}.vm.network "private_network", virtualbox__intnet: "broadcast_${hostname}", auto_config: false           # ens0s9
+    ${switch_variable_name}.vm.network "private_network", virtualbox__intnet: "broadcast_${hostname}", auto_config: false           # ens0s9

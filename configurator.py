@@ -12,35 +12,50 @@ from statistics import variance
 import string
 import os
 
-def import_template(fpath="Vagrantfile_template"):
+def import_template(fpath="Vagrantfile_template", text_needed=False):
     with open(fpath) as t:
         text = t.read()
         template = string.Template(text)
     t.close()
-    return template
+    if text_needed:
+        return template, text
+    else:
+        return template
 
 def export_config(config, fpath="Vagrantfile_generated"):
+    print(config)
     with open(fpath, "w") as output:
         output.write(config)
     output.close()
 
 def generate_component_templates(n_hosts, n_switches, host_names, switch_names):
-
-    # Generating Hosts
     gen_hosts = ""
     gen_switches = ""
+    gen_ports = ""
 
+    # Generating Hosts
     host_template = import_template("host_template")    
     for i in range(0, n_hosts):
         gen_hosts += host_template.substitute(**host_names[i]) + "\n"
+    # Aligning the code by removing fist 2 spaces
+    gen_hosts = gen_hosts[2:]
 
+    # Generating Switch Ports
+    port_template, switch_text = import_template("port_template", True)
+    switch_text = switch_text.replace("    ", "")
+    for i in range(0, n_hosts):
+        gen_ports += switch_text + "\n    "
+    
     # Generating Switches
-    switch_template = import_template("switch_template")
+    switch_template, switch_text = import_template("switch_template", True)
     for i in range(0, n_switches):
-        gen_switches += switch_template.substitute(**switch_names[i]) + "\n"
+        switch_text = switch_text.replace("${ports}", gen_ports)
+        switch_template = string.Template(switch_text)
+        gen_switches += switch_template.substitute(**switch_names[i])
+    # Aligning the code by removing the last \n
+    gen_switches = gen_switches[:len(gen_switches) - 1]
 
-    #TODO multiply port lines by n_switches
-    #TODO cofig lines are not indented correctly
+    #TODO Generate and configure file for each component
     return gen_hosts, gen_switches
 
 if __name__ == "__main__":
@@ -51,7 +66,7 @@ if __name__ == "__main__":
     # Ask user for number of hosts
     # n_hosts = input("Enter number of hosts: (Default=2) ")
     # n_hosts = int(n_hosts) if n_hosts != '' else 2
-    n_hosts = 2
+    n_hosts = 3
     n_switches = 1
 
     # Generate host names ( {'hostname1': 'host-a', 'hostname2': 'host-b'} )
@@ -59,7 +74,7 @@ if __name__ == "__main__":
     switch_names = []
     for i in range(0, n_hosts):
         host_names.append({"hostname": "host_" + chr(ord('a') + i), "host_variable_name" : "host" + chr(ord('a') + i)})
-        switch_names.append({"switchname": "switch_" + chr(ord('a') + i), "switch_variable_name" : "switch" + chr(ord('a') + i)})
+        switch_names.append({"switchname": "switch_" + chr(ord('a') + i), "switch_variable_name" : "switch" + chr(ord('a') + i), "hostname": "host_" + chr(ord('a') + i)})
 
     # Import empty template to be populated with components
     template = import_template()

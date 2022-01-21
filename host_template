@@ -1,10 +1,10 @@
-config.vm.define "${hostname}" do |${host_variable_name}|
-  ${host_variable_name}.vm.box = "ubuntu/bionic64"
-  ${host_variable_name}.vm.hostname = "${hostname}"
-  ${host_variable_name}.vm.network "private_network", virtualbox__intnet: "broadcast_${hostname}", auto_config: false
-  ${host_variable_name}.vm.provision "shell", path: "common.sh"
-  ${host_variable_name}.vm.provision "shell", path: "${hostname}.sh"
-  ${host_variable_name}.vm.provider "virtualbox" do |vb|
-    vb.memory = 256
+  config.vm.define "${hostname}" do |${host_variable_name}|
+    ${host_variable_name}.vm.box = "ubuntu/bionic64"
+    ${host_variable_name}.vm.hostname = "${hostname}"
+    ${host_variable_name}.vm.network "private_network", virtualbox__intnet: "broadcast_${hostname}", auto_config: false
+    ${host_variable_name}.vm.provision "shell", path: "common.sh"
+    ${host_variable_name}.vm.provision "shell", path: "${hostname}.sh"
+    ${host_variable_name}.vm.provider "virtualbox" do |vb|
+      vb.memory = 256
+    end
   end
-end
