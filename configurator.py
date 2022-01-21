@@ -8,6 +8,7 @@
 # can be used to create the network based on the parameters provided by running the 'vagrant up' command
 # Testing the configuration can be done by doing ping operations, using netperf program and running benchmarks.
 
+from operator import ge
 from statistics import variance
 import string
 import os
@@ -24,7 +25,7 @@ def import_template(fpath="configurator_templates/Vagrantfile_template", text_ne
         return template
 
 def export_config(config, fpath="Vagrantfile_generated"):
-    print(config)
+    #print(config)
     with open(fpath, "w") as output:
         output.write(config)
     output.close()
@@ -33,30 +34,40 @@ def generate_external_files():
     #TODO Generate and configure file for each component
     pass
 
-def generate_component_templates(n_hosts, n_switches, host_names, switch_names):
-    gen_hosts = ""
-    gen_switches = ""
-    gen_ports = ""
-
+def generate_component_templates(n_hosts, n_switches, names):
+    
     # Generating Hosts
+    gen_hosts = ""
     host_template = import_template("configurator_templates/host_template")    
     for i in range(0, n_hosts):
-        gen_hosts += host_template.substitute(**host_names[i]) + "\n"
+        gen_hosts += host_template.substitute(**names[i]) + "\n"
     # Aligning the code by removing fist 2 spaces
     gen_hosts = gen_hosts[2:]
 
-    # Generating Switch Ports
-    port_template, port_text = import_template("configurator_templates/port_template", True)
-    port_text = port_text.replace("    ", "")
-    for i in range(0, n_hosts):
-        gen_ports += port_text + "\n    "
-    
     # Generating Switches
+    gen_switches = ""
     switch_template, switch_text = import_template("configurator_templates/switch_template", True)
     for i in range(0, n_switches):
+        # Generating Switch Ports
+        port_template, port_text = import_template("configurator_templates/port_template", True)
+        port_text = port_text.replace("    ", "")
+        
+        gen_ports = ""
+        for j in range(0, n_hosts):
+            # Substituting the port number with the host number
+            port = port_template.substitute(**names[j]) + "\n    "
+            # Substituting the switch variable name as it would be wrong due to indexing
+            port_name = names[i]["switch_variable_name"]
+            port = port_name + port[11:]
+            gen_ports += port
+
+        #Gen_ports is GOOD
+        # switch_text is not good.
         switch_text = switch_text.replace("${ports}", gen_ports)
+        #Below is GOOD
         switch_template = string.Template(switch_text)
-        gen_switches += switch_template.substitute(**switch_names[i])
+        gen_switches += switch_template.substitute(**names[i])
+        
     # Aligning the code by removing the last \n
     gen_switches = gen_switches[:len(gen_switches) - 1]
 
@@ -72,21 +83,25 @@ if __name__ == "__main__":
     # Ask user for number of hosts
     # n_hosts = input("Enter number of hosts: (Default=2) ")
     # n_hosts = int(n_hosts) if n_hosts != '' else 2
-    n_hosts = 3
+    n_hosts = 2
     n_switches = 1
 
     # Generate host names ( {'hostname1': 'host-a', 'hostname2': 'host-b'} )
-    host_names = []
-    switch_names = []
+    names = []
     for i in range(0, n_hosts):
-        host_names.append({"hostname": "host_" + chr(ord('a') + i), "host_variable_name" : "host" + chr(ord('a') + i)})
-        switch_names.append({"switchname": "switch_" + chr(ord('a') + i), "switch_variable_name" : "switch" + chr(ord('a') + i), "hostname": "host_" + chr(ord('a') + i), "portname": "ens0s" + str(i+8)})
+        names.append({
+                "switchname": "switch_" + chr(ord('a') + i), 
+                "switch_variable_name" : "switch" + chr(ord('a') + i), 
+                "hostname": "host_" + chr(ord('a') + i), 
+                "host_variable_name" : "host" + chr(ord('a') + i), 
+                "portname": "ens0s" + str(i+8)
+            })
 
     # Import empty template to be populated with components
     template = import_template()
     
     # Generate components (Routers, Switches, Hosts)
-    gen_hosts, gen_switches = generate_component_templates(n_hosts, n_switches, host_names, switch_names)
+    gen_hosts, gen_switches = generate_component_templates(n_hosts, n_switches, names)
 
     # Adding components to the config template
     data = {'hosts': gen_hosts, 'switches': gen_switches}
