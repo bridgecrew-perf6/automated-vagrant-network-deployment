@@ -29,6 +29,10 @@ def export_config(config, fpath="Vagrantfile_generated"):
         output.write(config)
     output.close()
 
+def generate_external_files():
+    #TODO Generate and configure file for each component
+    pass
+
 def generate_component_templates(n_hosts, n_switches, host_names, switch_names):
     gen_hosts = ""
     gen_switches = ""
@@ -42,10 +46,10 @@ def generate_component_templates(n_hosts, n_switches, host_names, switch_names):
     gen_hosts = gen_hosts[2:]
 
     # Generating Switch Ports
-    port_template, switch_text = import_template("configurator_templates/port_template", True)
-    switch_text = switch_text.replace("    ", "")
+    port_template, port_text = import_template("configurator_templates/port_template", True)
+    port_text = port_text.replace("    ", "")
     for i in range(0, n_hosts):
-        gen_ports += switch_text + "\n    "
+        gen_ports += port_text + "\n    "
     
     # Generating Switches
     switch_template, switch_text = import_template("configurator_templates/switch_template", True)
@@ -56,7 +60,8 @@ def generate_component_templates(n_hosts, n_switches, host_names, switch_names):
     # Aligning the code by removing the last \n
     gen_switches = gen_switches[:len(gen_switches) - 1]
 
-    #TODO Generate and configure file for each component
+    # Generate and configure file for each component
+    generate_external_files()
     return gen_hosts, gen_switches
 
 if __name__ == "__main__":
@@ -75,7 +80,7 @@ if __name__ == "__main__":
     switch_names = []
     for i in range(0, n_hosts):
         host_names.append({"hostname": "host_" + chr(ord('a') + i), "host_variable_name" : "host" + chr(ord('a') + i)})
-        switch_names.append({"switchname": "switch_" + chr(ord('a') + i), "switch_variable_name" : "switch" + chr(ord('a') + i), "hostname": "host_" + chr(ord('a') + i)})
+        switch_names.append({"switchname": "switch_" + chr(ord('a') + i), "switch_variable_name" : "switch" + chr(ord('a') + i), "hostname": "host_" + chr(ord('a') + i), "portname": "ens0s" + str(i+8)})
 
     # Import empty template to be populated with components
     template = import_template()
