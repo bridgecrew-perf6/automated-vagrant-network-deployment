@@ -11,8 +11,9 @@
 from statistics import variance
 import string
 import os
+import re
 
-def import_template(fpath="Vagrantfile_template", text_needed=False):
+def import_template(fpath="configurator_templates/Vagrantfile_template", text_needed=False):
     with open(fpath) as t:
         text = t.read()
         template = string.Template(text)
@@ -34,20 +35,20 @@ def generate_component_templates(n_hosts, n_switches, host_names, switch_names):
     gen_ports = ""
 
     # Generating Hosts
-    host_template = import_template("host_template")    
+    host_template = import_template("configurator_templates/host_template")    
     for i in range(0, n_hosts):
         gen_hosts += host_template.substitute(**host_names[i]) + "\n"
     # Aligning the code by removing fist 2 spaces
     gen_hosts = gen_hosts[2:]
 
     # Generating Switch Ports
-    port_template, switch_text = import_template("port_template", True)
+    port_template, switch_text = import_template("configurator_templates/port_template", True)
     switch_text = switch_text.replace("    ", "")
     for i in range(0, n_hosts):
         gen_ports += switch_text + "\n    "
     
     # Generating Switches
-    switch_template, switch_text = import_template("switch_template", True)
+    switch_template, switch_text = import_template("configurator_templates/switch_template", True)
     for i in range(0, n_switches):
         switch_text = switch_text.replace("${ports}", gen_ports)
         switch_template = string.Template(switch_text)
@@ -86,6 +87,9 @@ if __name__ == "__main__":
     data = {'hosts': gen_hosts, 'switches': gen_switches}
     final_config = template.substitute(**data)
 
+    # Removing empty lines
+    final_config = re.sub(r'\n\s*\n', '\n', final_config)
+    
     # Export the final config
     export_config(final_config)
 
