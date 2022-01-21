@@ -24,15 +24,57 @@ def import_template(fpath="configurator_templates/Vagrantfile_template", text_ne
     else:
         return template
 
-def export_config(config, fpath="Vagrantfile_generated"):
+def export_config(config, fpath="generated_topology/Vagrantfile"):
     #print(config)
     with open(fpath, "w") as output:
         output.write(config)
     output.close()
 
-def generate_external_files():
+def generate_host_sh_files(n_hosts, names):
+    host_sh_template = import_template("configurator_templates/host_sh_template")
+    hostnames = []
+    for i in range(0, n_hosts):
+        hostnames.append(names[i]["hostname"])
+        names[i]["hostname"] = names[i]["hostname"].replace("_", "-")
+        gen_sh = host_sh_template.substitute(**names[i])
+        export_config(gen_sh, "generated_topology/" + hostnames[i] + ".sh")
+
+def generate_common_sh_file():
+    content = "export DEBIAN_FRONTEND=noninteractive\n# Startup commands go here"
+    export_config(content, "generated_topology/common.sh")
+
+def generate_switch_sh_files(n_hosts, n_switches, names):
+    switch_sh_template = import_template("configurator_templates/switch_sh_template")
+    insert1 = "sudo ovs-vsctl add-br my_bridge"
+    bridge_conf = string.Template("sudo ovs-vsctl add-port my_bridge ${portname}")
+    insert2 = string.Template("echo \"${switchname} -> Port assign to VLAN..\\n\"")
+
+    for i in range(0, n_switches):
+        gen_sh = switch_sh_template.substitute(**names[i])
+
+        bridge = "\n" + insert1 + "\n"
+        for j in range(n_hosts):
+            bridge += bridge_conf.substitute(**names[j]) + "\n"
+        bridge += insert2.substitute(**names[i])
+        gen_sh += bridge
+        export_config(gen_sh, "generated_topology/" + names[i]["switch_variable_name"] + ".sh")
+
+def generate_switch_always_file(n_hosts, names):
+    # Every time when switch give up, power on link
+    config = string.Template("sudo ip link set ${portname} up")
+    gen_conf = ""
+    for i in range(0, n_hosts):
+        gen_conf += config.substitute(**names[i]) + "\n"
+
+    export_config(gen_conf, "generated_topology/switch_always.sh")
+
+
+def generate_external_files(n_hosts, n_switches, names):
     #TODO Generate and configure file for each component
-    pass
+    generate_host_sh_files(n_hosts, names)
+    generate_common_sh_file()
+    generate_switch_sh_files(n_hosts, n_switches, names)
+    generate_switch_always_file(n_hosts, names)
 
 def generate_component_templates(n_hosts, n_switches, names):
     
@@ -72,7 +114,7 @@ def generate_component_templates(n_hosts, n_switches, names):
     gen_switches = gen_switches[:len(gen_switches) - 1]
 
     # Generate and configure file for each component
-    generate_external_files()
+    generate_external_files(n_hosts, n_switches, names)
     return gen_hosts, gen_switches
 
 if __name__ == "__main__":
@@ -81,9 +123,13 @@ if __name__ == "__main__":
     print("Starting configurator script")
 
     # Ask user for number of hosts
-    # n_hosts = input("Enter number of hosts: (Default=2) ")
-    # n_hosts = int(n_hosts) if n_hosts != '' else 2
-    n_hosts = 2
+    n_hosts = input("Enter number of hosts: (Default=2) ")
+    n_hosts = int(n_hosts) if n_hosts != '' else 2
+
+    # Ask user for number of switches
+    # n_switches = input("Enter number of hosts: (Default=2) ")
+    # n_switches = int(n_switches) if n_switches != '' else 1
+    # n_hosts = 2
     n_switches = 1
 
     # Generate host names ( {'hostname1': 'host-a', 'hostname2': 'host-b'} )
@@ -94,7 +140,8 @@ if __name__ == "__main__":
                 "switch_variable_name" : "switch" + chr(ord('a') + i), 
                 "hostname": "host_" + chr(ord('a') + i), 
                 "host_variable_name" : "host" + chr(ord('a') + i), 
-                "portname": "ens0s" + str(i+8)
+                "portname": "ens0s" + str(i+8),
+                "ip" : "192.168." + "0." + str(i + 1)
             })
 
     # Import empty template to be populated with components

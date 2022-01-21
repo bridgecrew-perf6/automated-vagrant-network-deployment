@@ -1,0 +1,18 @@
+# Startup commands for ${hostname} go here
+sudo apt update
+sudo ip link set ${portname} up
+echo "${hostname} -> net set up..\n"
+sudo /bin/su -c \
+"cat << EOF > /etc/netplan/51-${hostname}-netConf.yaml
+network:
+   ethernets:
+       ${portname}:
+           dhcp4: false
+           addresses:
+           - ${ip}/24
+   version: 2
+EOF
+"
+echo "${hostname} -> static IP set..\n"
+sudo netplan apply
+echo "${hostname} -> Route add..\n"
