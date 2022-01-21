@@ -1,6 +1,7 @@
 # Startup commands for Roouter-1 go here
 sudo apt update
 sudo apt install vlan
+sudo apt install iptables
 # Enable packet forwarding
 sudo /bin/su -c "echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf"
 sudo sysctl -p /etc/sysctl.conf

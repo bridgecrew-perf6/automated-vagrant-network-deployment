@@ -2,6 +2,7 @@
 sudo apt update
 sudo apt install ntpdate
 sudo apt install traceroute
+sudo apt install iperf3 -y
 sudo ip link set enp0s8 up
 echo "Host-A -> net set up..\n"
 sudo /bin/su -c \
