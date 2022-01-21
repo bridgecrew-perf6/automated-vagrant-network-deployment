@@ -7,9 +7,9 @@ apt-get install -y openvswitch-common openvswitch-switch apt-transport-https ca-
 # Enable packet forwarding
 sudo /bin/su -c "echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf"
 sudo sysctl -p /etc/sysctl.conf
-echo "switch_a -> IP packet forward active..\n"
+echo "switch-a -> IP packet forward active..\n"
 # Set-up VLAN port
 sudo ovs-vsctl add-br my_bridge
-sudo ovs-vsctl add-port my_bridge ens0s8
-sudo ovs-vsctl add-port my_bridge ens0s9
-echo "switch_a -> Port assign to VLAN..\n"
+sudo ovs-vsctl add-port my_bridge enp0s8
+sudo ovs-vsctl add-port my_bridge enp0s9
+echo "switch-a -> Port assign to VLAN..\n"

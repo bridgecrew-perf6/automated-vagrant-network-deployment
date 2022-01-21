@@ -136,11 +136,11 @@ if __name__ == "__main__":
     names = []
     for i in range(0, n_hosts):
         names.append({
-                "switchname": "switch_" + chr(ord('a') + i), 
-                "switch_variable_name" : "switch" + chr(ord('a') + i), 
-                "hostname": "host_" + chr(ord('a') + i), 
+                "switchname": "switch-" + chr(ord('a') + i), 
+                "switch_variable_name" : "switch",# + chr(ord('a') + i), 
+                "hostname": "host-" + chr(ord('a') + i), 
                 "host_variable_name" : "host" + chr(ord('a') + i), 
-                "portname": "ens0s" + str(i+8),
+                "portname": "enp0s" + str(i+8),
                 "ip" : "192.168." + "0." + str(i + 1)
             })
 
