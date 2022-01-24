@@ -20,13 +20,10 @@ def import_template(fpath="configurator_templates/Vagrantfile_template", text_ne
         text = t.read()
         template = string.Template(text)
     t.close()
-    if text_needed:
-        return template, text
-    else:
-        return template
+    if text_needed: return template, text
+    else: return template
 
 def export_config(config, fpath="generated_topology/Vagrantfile"):
-    #print(config)
     with open(fpath, "w") as output:
         output.write(config)
     output.close()
@@ -62,22 +59,20 @@ def generate_switch_sh_files(n_hosts, n_switches, names):
         export_config(gen_sh, "generated_topology/" + names[i]["switch_variable_name"] + ".sh")
 
 def generate_switch_always_file(n_hosts, names):
-    # Every time when switch give up, power on link
+    # Every time when switch give up, power on link (Interesting behaviour: If method called as first, it overwrites the global variable)
     config = string.Template("sudo ip link set ${portname} up")
     gen_conf = ""
     for i in range(0, n_hosts):
         gen_conf += config.substitute(**names[i]) + "\n"
-
     export_config(gen_conf, "generated_topology/switch_always.sh")
 
-
 def generate_external_files(n_hosts, n_switches, names):
-    #TODO Generate and configure file for each component
+
+    generate_switch_always_file(n_hosts, names)
+    generate_switch_sh_files(n_hosts, n_switches, names)
     generate_host_sh_files(n_hosts, names)
     generate_common_sh_file()
-    generate_switch_sh_files(n_hosts, n_switches, names)
-    generate_switch_always_file(n_hosts, names)
-
+    
 def generate_component_templates(n_hosts, n_switches, names):
     
     # Generating Hosts
@@ -138,12 +133,16 @@ if __name__ == "__main__":
     # Generate host names ( {'hostname1': 'host-a', 'hostname2': 'host-b'} )
     names = []
     for i in range(0, n_hosts):
+        
+        if i >= 3: portname = "enp0s" + str(i+8+5)
+        else: portname = "enp0s" + str(i+8)
+
         names.append({
                 "switchname": "switch-" + chr(ord('a') + i), 
                 "switch_variable_name" : "switch",# + chr(ord('a') + i), 
                 "hostname": "host-" + chr(ord('a') + i), 
                 "host_variable_name" : "host" + chr(ord('a') + i), 
-                "portname": "enp0s" + str(i+8),
+                "portname": portname,
                 "ip" : "192.168." + "0." + str(i + 1)
             })
 
