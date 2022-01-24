@@ -75,6 +75,15 @@ def generate_external_files(n_hosts, n_switches, names):
     
 def generate_component_templates(n_hosts, n_switches, names):
     
+    promise = string.Template("vb.customize [\"modifyvm\", :id, \"--${promisename}\", \"allow-all\"]")
+    promise_names = {}
+    gen_promises = ""
+    for i in range(0, n_hosts):
+        promise_names.update({"promisename" : "nicpromisc" + str(i+2)})
+        gen_promise = promise.substitute(**promise_names)
+        gen_promises += "    " + gen_promise + "\n"
+    print(gen_promises)
+
     # Generating Hosts
     gen_hosts = ""
     host_template = import_template("configurator_templates/host_template")    
@@ -89,7 +98,6 @@ def generate_component_templates(n_hosts, n_switches, names):
     for i in range(0, n_switches):
         # Generating Switch Ports
         port_template, port_text = import_template("configurator_templates/port_template", True)
-        port_text = port_text.replace("    ", "")
         
         gen_ports = ""
         for j in range(0, n_hosts):
@@ -112,7 +120,7 @@ def generate_component_templates(n_hosts, n_switches, names):
 
     # Generate and configure file for each component
     generate_external_files(n_hosts, n_switches, names)
-    return gen_hosts, gen_switches
+    return gen_promises, gen_hosts, gen_switches
 
 if __name__ == "__main__":
 
@@ -150,10 +158,10 @@ if __name__ == "__main__":
     template = import_template()
     
     # Generate components (Routers, Switches, Hosts)
-    gen_hosts, gen_switches = generate_component_templates(n_hosts, n_switches, names)
+    gen_promises, gen_hosts, gen_switches = generate_component_templates(n_hosts, n_switches, names)
 
     # Adding components to the config template
-    data = {'hosts': gen_hosts, 'switches': gen_switches}
+    data = {'promises': gen_promises, 'hosts': gen_hosts, 'switches': gen_switches}
     final_config = template.substitute(**data)
 
     # Removing empty lines
