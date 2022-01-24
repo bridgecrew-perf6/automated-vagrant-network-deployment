@@ -100,7 +100,7 @@ def generate_component_templates(n_hosts, n_switches, names):
             port = port_template.substitute(**names[j]) + "\n    "
             # Substituting the switch variable name as it would be wrong due to indexing
             port_name = names[i]["switch_variable_name"]
-            port = port_name + port[11:]
+            port = port_name + port[10:]
             gen_ports += port
 
         #Gen_ports is GOOD

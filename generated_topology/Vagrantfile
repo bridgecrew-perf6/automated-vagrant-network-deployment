@@ -13,8 +13,10 @@ Vagrant.configure("2") do |config|
   config.vm.define "switch-a" do |switch|
     switch.vm.box = "ubuntu/bionic64"
     switch.vm.hostname = "switch"
-    switchvm.network "private_network", virtualbox__intnet: "broadcast_host-a", auto_config: false           # enp0s8
-    switchvm.network "private_network", virtualbox__intnet: "broadcast_host-b", auto_config: false           # enp0s9
+    switch.vm.network "private_network", virtualbox__intnet: "broadcast_host-a", auto_config: false           # enp0s8
+    switch.vm.network "private_network", virtualbox__intnet: "broadcast_host-b", auto_config: false           # enp0s9
+    switch.vm.network "private_network", virtualbox__intnet: "broadcast_host-c", auto_config: false           # enp0s10
+    switch.vm.network "private_network", virtualbox__intnet: "broadcast_host-d", auto_config: false           # enp0s11
     switch.vm.provision "shell", path: "switch.sh"
     switch.vm.provision "shell", path: "switch_always.sh", run: "always"
     switch.vm.provider "virtualbox" do |vb|
@@ -38,6 +40,26 @@ Vagrant.configure("2") do |config|
     hostb.vm.provision "shell", path: "common.sh"
     hostb.vm.provision "shell", path: "host-b.sh"
     hostb.vm.provider "virtualbox" do |vb|
+      vb.memory = 256
+    end
+  end
+  config.vm.define "host-c" do |hostc|
+    hostc.vm.box = "ubuntu/bionic64"
+    hostc.vm.hostname = "host-c"
+    hostc.vm.network "private_network", virtualbox__intnet: "broadcast_host-c", auto_config: false
+    hostc.vm.provision "shell", path: "common.sh"
+    hostc.vm.provision "shell", path: "host-c.sh"
+    hostc.vm.provider "virtualbox" do |vb|
+      vb.memory = 256
+    end
+  end
+  config.vm.define "host-d" do |hostd|
+    hostd.vm.box = "ubuntu/bionic64"
+    hostd.vm.hostname = "host-d"
+    hostd.vm.network "private_network", virtualbox__intnet: "broadcast_host-d", auto_config: false
+    hostd.vm.provision "shell", path: "common.sh"
+    hostd.vm.provision "shell", path: "host-d.sh"
+    hostd.vm.provider "virtualbox" do |vb|
       vb.memory = 256
     end
   end
