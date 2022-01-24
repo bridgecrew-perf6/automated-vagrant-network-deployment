@@ -75,12 +75,11 @@ def generate_external_files(n_hosts, n_switches, names):
     
 def generate_component_templates(n_hosts, n_switches, names):
     
+    # Generating porimsenames
     promise = string.Template("vb.customize [\"modifyvm\", :id, \"--${promisename}\", \"allow-all\"]")
-    promise_names = {}
     gen_promises = ""
     for i in range(0, n_hosts):
-        promise_names.update({"promisename" : "nicpromisc" + str(i+2)})
-        gen_promise = promise.substitute(**promise_names)
+        gen_promise = promise.substitute(**{"promisename" : "nicpromisc" + str(i+2)})
         gen_promises += "    " + gen_promise + "\n"
 
     # Generating Hosts
