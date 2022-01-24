@@ -82,7 +82,6 @@ def generate_component_templates(n_hosts, n_switches, names):
         promise_names.update({"promisename" : "nicpromisc" + str(i+2)})
         gen_promise = promise.substitute(**promise_names)
         gen_promises += "    " + gen_promise + "\n"
-    print(gen_promises)
 
     # Generating Hosts
     gen_hosts = ""
