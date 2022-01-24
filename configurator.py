@@ -10,6 +10,7 @@
 
 from operator import ge
 from statistics import variance
+from pathlib import Path
 import string
 import os
 import re
@@ -121,6 +122,7 @@ def generate_component_templates(n_hosts, n_switches, names):
 if __name__ == "__main__":
 
     os.system('cls')
+    Path("generated_topology").mkdir(parents=True, exist_ok=True)
     print("Starting configurator script")
 
     # Ask user for number of hosts
