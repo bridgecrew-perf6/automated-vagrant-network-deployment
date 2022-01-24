@@ -36,6 +36,7 @@ def generate_host_sh_files(n_hosts, names):
     for i in range(0, n_hosts):
         hostnames.append(names[i]["hostname"])
         names[i]["hostname"] = names[i]["hostname"].replace("_", "-")
+        names[i]["portname"] = "enp0s8"
         gen_sh = host_sh_template.substitute(**names[i])
         export_config(gen_sh, "generated_topology/" + hostnames[i] + ".sh")
 
