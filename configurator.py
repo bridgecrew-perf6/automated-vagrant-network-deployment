@@ -75,7 +75,7 @@ def generate_external_files(n_hosts, n_switches, names):
     generate_host_sh_files(n_hosts, names)
     generate_common_sh_file()
     
-def generate_component_templates(n_hosts, n_switches, names):
+def generate_component_templates(n_hosts, n_switches, names, port_owners):
     
     # Generating porimsenames
     promise = string.Template("vb.customize [\"modifyvm\", :id, \"--${promisename}\", \"allow-all\"]")
@@ -92,26 +92,28 @@ def generate_component_templates(n_hosts, n_switches, names):
     # Aligning the code by removing fist 2 spaces
     gen_hosts = gen_hosts[2:]
 
+
     # Generating Switches
     gen_switches = ""
+    host_counter = 0
     switch_template, switch_text = import_template("configurator_templates/switch_template", True)
     for i in range(0, n_switches):
+
         # Generating Switch Ports
         port_template, port_text = import_template("configurator_templates/port_template", True)
         
         gen_ports = ""
-        for j in range(0, n_hosts):
+        port_counter = 0
+        for j in range(0, port_owners[i]):
+            print("host: broadcast_" + names[host_counter]["hostname"] + " is connnected on port " + names[port_counter]["portname"])
+            host_counter += 1
+            port_counter += 1
             # Substituting the port number with the host number
             port = port_template.substitute(**names[j]) + "\n    "
-            # # Substituting the switch variable name as it would be wrong due to indexing
-            # port_name = names[i]["switch_variable_name"]
-            # port = port_name + port[10:]
             gen_ports += port[4:]
 
-        #Gen_ports is GOOD
-        # switch_text is not good.
+
         switch_text = switch_text.replace("${ports}", gen_ports)
-        #Below is GOOD
         switch_template = string.Template(switch_text)
         gen_switches += switch_template.substitute(**names[i])
         
@@ -122,6 +124,7 @@ def generate_component_templates(n_hosts, n_switches, names):
     generate_external_files(n_hosts, n_switches, names)
     return gen_promises, gen_hosts, gen_switches
 
+
 if __name__ == "__main__":
 
     os.system('cls')
@@ -129,22 +132,34 @@ if __name__ == "__main__":
     print("Starting configurator script")
 
     # Ask user for number of hosts
-    n_hosts = input("Enter number of hosts: (Default=2) ")
-    n_hosts = int(n_hosts) if n_hosts != '' else 2
+    n_hosts = input("Enter number of hosts: (Default=4) ")
+    n_hosts = int(n_hosts) if n_hosts != '' else 4
 
     # Ask user for number of switches
-    n_switches = input("Enter number of switches: (Default=1) ")
-    n_switches = int(n_switches) if n_switches != '' else 1
-    # n_hosts = 2
-    # n_switches = 1
+    n_switches = input("Enter number of switches: (Default=2) ")
+    n_switches = int(n_switches) if n_switches != '' else 2
 
-    # Generate host names ( {'hostname1': 'host-a', 'hostname2': 'host-b'} )
+    if n_switches == 1:
+        port_owners = [n_hosts]
+    elif n_switches == 2:
+        n_hosts_of_switch_a = int(input("Enter number of hosts connected to switch_a: (Free hosts remaining: " + str(n_hosts) + ") "))
+        if n_hosts_of_switch_a > n_hosts:
+            print("Number of hosts connected to switch_a is greater than the number of requested hosts!")
+            print("Note: All the hosts are connected to switch_a...")
+            n_hosts_of_switch_a = n_hosts
+            n_hosts_of_switch_b = 0
+        else: n_available_hosts = n_hosts - n_hosts_of_switch_a
+        n_hosts_of_switch_b = n_available_hosts
+        port_owners = [n_hosts_of_switch_a, n_hosts_of_switch_b]
+        print(port_owners)
+
+    # Generate host names ( {'hostname1': 'host-a', 'hostname2': 'host-b'} )    
     names = []
     for i in range(0, n_hosts):
         
         if i >= 3: portname = "enp0s" + str(i+8+5)
         else: portname = "enp0s" + str(i+8)
-
+        
         names.append({
                 "switchname": "switch-" + chr(ord('a') + i), 
                 "switch_variable_name" : "switch",# + chr(ord('a') + i), 
@@ -158,7 +173,7 @@ if __name__ == "__main__":
     template = import_template()
     
     # Generate components (Routers, Switches, Hosts)
-    gen_promises, gen_hosts, gen_switches = generate_component_templates(n_hosts, n_switches, names)
+    gen_promises, gen_hosts, gen_switches = generate_component_templates(n_hosts, n_switches, names, port_owners)
 
     # Adding components to the config template
     data = {'promises': gen_promises, 'hosts': gen_hosts, 'switches': gen_switches}
