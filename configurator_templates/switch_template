@@ -1,9 +1,9 @@
   config.vm.define "${switchname}" do |${switch_variable_name}|
     ${switch_variable_name}.vm.box = "ubuntu/bionic64"
-    ${switch_variable_name}.vm.hostname = "switch"
+    ${switch_variable_name}.vm.hostname = "${switchname}"
     ${ports}
-    ${switch_variable_name}.vm.provision "shell", path: "switch.sh"
-    ${switch_variable_name}.vm.provision "shell", path: "switch_always.sh", run: "always"
+    ${switch_variable_name}.vm.provision "shell", path: "${switchname}.sh"
+    ${switch_variable_name}.vm.provision "shell", path: "${switchname}_always.sh", run: "always"
     ${switch_variable_name}.vm.provider "virtualbox" do |vb|
       vb.memory = 256
     end

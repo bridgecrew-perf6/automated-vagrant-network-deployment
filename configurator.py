@@ -42,7 +42,7 @@ def generate_common_sh_file():
     content = "export DEBIAN_FRONTEND=noninteractive\n# Startup commands go here"
     export_config(content, "generated_topology/common.sh")
 
-def generate_switch_sh_files(n_hosts, n_switches, names):
+def generate_switch_sh_files(n_hosts, n_switches, names, port_owners):
     switch_sh_template = import_template("configurator_templates/switch_sh_template")
     insert1 = "sudo ovs-vsctl add-br my_bridge"
     bridge_conf = string.Template("sudo ovs-vsctl add-port my_bridge ${portname}")
@@ -52,35 +52,36 @@ def generate_switch_sh_files(n_hosts, n_switches, names):
         gen_sh = switch_sh_template.substitute(**names[i])
 
         bridge = "\n" + insert1 + "\n"
-        for j in range(n_hosts):
+        for j in range(0, port_owners[i]):
             bridge += bridge_conf.substitute(**names[j]) + "\n"
         bridge += insert2.substitute(**names[i])
         gen_sh += bridge
-        export_config(gen_sh, "generated_topology/" + names[i]["switch_variable_name"] + ".sh")
+        export_config(gen_sh, "generated_topology/" + names[i]["switchname"] + ".sh")
 
-def generate_switch_always_file(n_hosts, names):
+def generate_switch_always_files(n_hosts, n_switches, names, port_owners):
     # Every time when switch give up, power on link (Interesting behaviour: If method called as first, it overwrites the global variable)
     config = string.Template("sudo ip link set ${portname} up")
-    gen_conf = ""
-    for i in range(0, n_hosts):
-        gen_conf += config.substitute(**names[i]) + "\n"
-    export_config(gen_conf, "generated_topology/switch_always.sh")
+    
+    for i in range(0, n_switches):
+        gen_conf = ""
+        for j in range(0, port_owners[i]):
+            gen_conf += config.substitute(**names[j]) + "\n"
+        export_config(gen_conf, "generated_topology/" + names[i]["switchname"] + "_always.sh")
 
 def generate_external_files(n_hosts, n_switches, names):
 
-    generate_switch_always_file(n_hosts, names)
-    generate_switch_sh_files(n_hosts, n_switches, names)
+    generate_switch_always_files(n_hosts, n_switches, names, port_owners)
+    generate_switch_sh_files(n_hosts, n_switches, names, port_owners)
     generate_host_sh_files(n_hosts, names)
     generate_common_sh_file()
     
-def generate_component_templates(n_hosts, n_switches, names):
+def generate_component_templates(n_hosts, n_switches, names, port_owners):
     
+    # Generating porimsenames
     promise = string.Template("vb.customize [\"modifyvm\", :id, \"--${promisename}\", \"allow-all\"]")
-    promise_names = {}
     gen_promises = ""
     for i in range(0, n_hosts):
-        promise_names.update({"promisename" : "nicpromisc" + str(i+2)})
-        gen_promise = promise.substitute(**promise_names)
+        gen_promise = promise.substitute(**{"promisename" : "nicpromisc" + str(i+2)})
         gen_promises += "    " + gen_promise + "\n"
 
     # Generating Hosts
@@ -91,26 +92,29 @@ def generate_component_templates(n_hosts, n_switches, names):
     # Aligning the code by removing fist 2 spaces
     gen_hosts = gen_hosts[2:]
 
+
     # Generating Switches
     gen_switches = ""
-    switch_template, switch_text = import_template("configurator_templates/switch_template", True)
+    host_counter = 0
     for i in range(0, n_switches):
-        # Generating Switch Ports
-        port_template, port_text = import_template("configurator_templates/port_template", True)
+        switch_template, switch_text = import_template("configurator_templates/switch_template", True)
         
         gen_ports = ""
-        for j in range(0, n_hosts):
-            # Substituting the port number with the host number
-            port = port_template.substitute(**names[j]) + "\n    "
-            # Substituting the switch variable name as it would be wrong due to indexing
-            port_name = names[i]["switch_variable_name"]
-            port = port_name + port[10:]
-            gen_ports += port
+        port_counter = 0
+        for j in range(0, port_owners[i]):
+            # Generating Switch Ports
+            port_template, port_text = import_template("configurator_templates/port_template", True)
+            
+            # print("host: broadcast_" + names[host_counter]["hostname"] + " is connnected on port " + names[port_counter]["portname"])
+            port_t = {"hostname": names[host_counter]["hostname"], "portname": names[port_counter]["portname"], "switch_variable_name": "switch"}
+            host_counter += 1
+            port_counter += 1
+            
+            #  Substituting the port number with the host number
+            port = port_template.substitute(**port_t) + "\n    "
+            gen_ports += port[4:]
 
-        #Gen_ports is GOOD
-        # switch_text is not good.
         switch_text = switch_text.replace("${ports}", gen_ports)
-        #Below is GOOD
         switch_template = string.Template(switch_text)
         gen_switches += switch_template.substitute(**names[i])
         
@@ -121,6 +125,7 @@ def generate_component_templates(n_hosts, n_switches, names):
     generate_external_files(n_hosts, n_switches, names)
     return gen_promises, gen_hosts, gen_switches
 
+
 if __name__ == "__main__":
 
     os.system('cls')
@@ -128,21 +133,38 @@ if __name__ == "__main__":
     print("---Starting network configurator script---\n\n")
 
     # Ask user for number of hosts
+<<<<<<< HEAD
     n_hosts = input("Enter number of hosts: (Default=2) \n")
     n_hosts = int(n_hosts) if n_hosts != '' else 2
+=======
+    n_hosts = input("Enter number of hosts: (Default=4) ")
+    n_hosts = int(n_hosts) if n_hosts != '' else 4
+>>>>>>> ca36af8fadb30db5952ba7dc3295b640a2c90115
 
     # Ask user for number of switches
-    # n_switches = input("Enter number of hosts: (Default=2) ")
-    # n_switches = int(n_switches) if n_switches != '' else 1
-    # n_hosts = 2
-    n_switches = 1
+    n_switches = input("Enter number of switches: (Default=2) ")
+    n_switches = int(n_switches) if n_switches != '' else 2
 
-    # Generate host names ( {'hostname1': 'host-a', 'hostname2': 'host-b'} )
+    if n_switches == 1:
+        port_owners = [n_hosts]
+    elif n_switches == 2:
+        n_hosts_of_switch_a = int(input("Enter number of hosts connected to switch_a: (Free hosts remaining: " + str(n_hosts) + ") "))
+        if n_hosts_of_switch_a > n_hosts:
+            print("Number of hosts connected to switch_a is greater than the number of requested hosts!")
+            print("Note: All the hosts are connected to switch_a...")
+            n_hosts_of_switch_a = n_hosts
+            n_hosts_of_switch_b = 0
+        else: n_available_hosts = n_hosts - n_hosts_of_switch_a
+        n_hosts_of_switch_b = n_available_hosts
+        port_owners = [n_hosts_of_switch_a, n_hosts_of_switch_b]
+
+    # Generate host names ( {'hostname1': 'host-a', 'hostname2': 'host-b'} )    
     names = []
     for i in range(0, n_hosts):
         
         if i >= 3: portname = "enp0s" + str(i+8+5)
         else: portname = "enp0s" + str(i+8)
+<<<<<<< HEAD
 
         hostname = "host-" + chr(ord('a') + i)
         print("Configure link capacity for {}".format(hostname))
@@ -151,6 +173,9 @@ if __name__ == "__main__":
         delay = input("Network delay (Default = 0ms) : \n")
         delay = int(delay) if delay != '' else 0;
 
+=======
+        
+>>>>>>> ca36af8fadb30db5952ba7dc3295b640a2c90115
         names.append({
                 "switchname": "switch-" + chr(ord('a') + i), 
                 "switch_variable_name" : "switch",# + chr(ord('a') + i), 
@@ -166,7 +191,7 @@ if __name__ == "__main__":
     template = import_template()
     
     # Generate components (Routers, Switches, Hosts)
-    gen_promises, gen_hosts, gen_switches = generate_component_templates(n_hosts, n_switches, names)
+    gen_promises, gen_hosts, gen_switches = generate_component_templates(n_hosts, n_switches, names, port_owners)
 
     # Adding components to the config template
     data = {'promises': gen_promises, 'hosts': gen_hosts, 'switches': gen_switches}
