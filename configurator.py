@@ -133,13 +133,8 @@ if __name__ == "__main__":
     print("---Starting network configurator script---\n\n")
 
     # Ask user for number of hosts
-<<<<<<< HEAD
     n_hosts = input("Enter number of hosts: (Default=2) \n")
     n_hosts = int(n_hosts) if n_hosts != '' else 2
-=======
-    n_hosts = input("Enter number of hosts: (Default=4) ")
-    n_hosts = int(n_hosts) if n_hosts != '' else 4
->>>>>>> ca36af8fadb30db5952ba7dc3295b640a2c90115
 
     # Ask user for number of switches
     n_switches = input("Enter number of switches: (Default=2) ")
@@ -164,7 +159,6 @@ if __name__ == "__main__":
         
         if i >= 3: portname = "enp0s" + str(i+8+5)
         else: portname = "enp0s" + str(i+8)
-<<<<<<< HEAD
 
         hostname = "host-" + chr(ord('a') + i)
         print("Configure link capacity for {}".format(hostname))
@@ -173,9 +167,6 @@ if __name__ == "__main__":
         delay = input("Network delay (Default = 0ms) : \n")
         delay = int(delay) if delay != '' else 0;
 
-=======
-        
->>>>>>> ca36af8fadb30db5952ba7dc3295b640a2c90115
         names.append({
                 "switchname": "switch-" + chr(ord('a') + i), 
                 "switch_variable_name" : "switch",# + chr(ord('a') + i), 
