@@ -42,7 +42,7 @@ def generate_common_sh_file():
     content = "export DEBIAN_FRONTEND=noninteractive\n# Startup commands go here"
     export_config(content, "generated_topology/common.sh")
 
-def generate_switch_sh_files(n_hosts, n_switches, names):
+def generate_switch_sh_files(n_hosts, n_switches, names, port_owners):
     switch_sh_template = import_template("configurator_templates/switch_sh_template")
     insert1 = "sudo ovs-vsctl add-br my_bridge"
     bridge_conf = string.Template("sudo ovs-vsctl add-port my_bridge ${portname}")
@@ -52,26 +52,26 @@ def generate_switch_sh_files(n_hosts, n_switches, names):
         gen_sh = switch_sh_template.substitute(**names[i])
 
         bridge = "\n" + insert1 + "\n"
-        for j in range(n_hosts):
+        for j in range(0, port_owners[i]):
             bridge += bridge_conf.substitute(**names[j]) + "\n"
         bridge += insert2.substitute(**names[i])
         gen_sh += bridge
         export_config(gen_sh, "generated_topology/" + names[i]["switchname"] + ".sh")
 
-def generate_switch_always_files(n_hosts, n_switches, names):
+def generate_switch_always_files(n_hosts, n_switches, names, port_owners):
     # Every time when switch give up, power on link (Interesting behaviour: If method called as first, it overwrites the global variable)
     config = string.Template("sudo ip link set ${portname} up")
-    gen_conf = ""
-    for i in range(0, n_hosts):
-        gen_conf += config.substitute(**names[i]) + "\n"
     
     for i in range(0, n_switches):
+        gen_conf = ""
+        for j in range(0, port_owners[i]):
+            gen_conf += config.substitute(**names[j]) + "\n"
         export_config(gen_conf, "generated_topology/" + names[i]["switchname"] + "_always.sh")
 
 def generate_external_files(n_hosts, n_switches, names):
 
-    generate_switch_always_files(n_hosts, n_switches, names)
-    generate_switch_sh_files(n_hosts, n_switches, names)
+    generate_switch_always_files(n_hosts, n_switches, names, port_owners)
+    generate_switch_sh_files(n_hosts, n_switches, names, port_owners)
     generate_host_sh_files(n_hosts, names)
     generate_common_sh_file()
     
@@ -96,22 +96,23 @@ def generate_component_templates(n_hosts, n_switches, names, port_owners):
     # Generating Switches
     gen_switches = ""
     host_counter = 0
-    switch_template, switch_text = import_template("configurator_templates/switch_template", True)
     for i in range(0, n_switches):
-
-        # Generating Switch Ports
-        port_template, port_text = import_template("configurator_templates/port_template", True)
+        switch_template, switch_text = import_template("configurator_templates/switch_template", True)
         
         gen_ports = ""
         port_counter = 0
         for j in range(0, port_owners[i]):
-            print("host: broadcast_" + names[host_counter]["hostname"] + " is connnected on port " + names[port_counter]["portname"])
+            # Generating Switch Ports
+            port_template, port_text = import_template("configurator_templates/port_template", True)
+            
+            # print("host: broadcast_" + names[host_counter]["hostname"] + " is connnected on port " + names[port_counter]["portname"])
+            port_t = {"hostname": names[host_counter]["hostname"], "portname": names[port_counter]["portname"], "switch_variable_name": "switch"}
             host_counter += 1
             port_counter += 1
-            # Substituting the port number with the host number
-            port = port_template.substitute(**names[j]) + "\n    "
+            
+            #  Substituting the port number with the host number
+            port = port_template.substitute(**port_t) + "\n    "
             gen_ports += port[4:]
-
 
         switch_text = switch_text.replace("${ports}", gen_ports)
         switch_template = string.Template(switch_text)
@@ -151,7 +152,6 @@ if __name__ == "__main__":
         else: n_available_hosts = n_hosts - n_hosts_of_switch_a
         n_hosts_of_switch_b = n_available_hosts
         port_owners = [n_hosts_of_switch_a, n_hosts_of_switch_b]
-        print(port_owners)
 
     # Generate host names ( {'hostname1': 'host-a', 'hostname2': 'host-b'} )    
     names = []
