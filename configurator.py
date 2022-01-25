@@ -35,7 +35,7 @@ def generate_host_sh_files(n_hosts, names):
         hostnames.append(names[i]["hostname"])
         names[i]["hostname"] = names[i]["hostname"].replace("_", "-")
         names[i]["portname"] = "enp0s8"
-        gen_sh = host_sh_template.substitute(**names[i])
+        gen_sh = host_sh_template.safe_substitute(**names[i])
         export_config(gen_sh, "generated_topology/" + hostnames[i] + ".sh")
 
 def generate_common_sh_file():
@@ -125,10 +125,10 @@ if __name__ == "__main__":
 
     os.system('cls')
     Path("generated_topology").mkdir(parents=True, exist_ok=True)
-    print("Starting configurator script")
+    print("---Starting network configurator script---\n\n")
 
     # Ask user for number of hosts
-    n_hosts = input("Enter number of hosts: (Default=2) ")
+    n_hosts = input("Enter number of hosts: (Default=2) \n")
     n_hosts = int(n_hosts) if n_hosts != '' else 2
 
     # Ask user for number of switches
@@ -144,13 +144,22 @@ if __name__ == "__main__":
         if i >= 3: portname = "enp0s" + str(i+8+5)
         else: portname = "enp0s" + str(i+8)
 
+        hostname = "host-" + chr(ord('a') + i)
+        print("Configure link capacity for {}".format(hostname))
+        bandwidth = input("Bandwidth in Mbit/s (Max = 200 Mbit/s, ENTER for no limit) : ")
+        bandwidth = int(bandwidth) if bandwidth != '' else 0;
+        delay = input("Network delay (Default = 0ms) : \n")
+        delay = int(delay) if delay != '' else 0;
+
         names.append({
                 "switchname": "switch-" + chr(ord('a') + i), 
                 "switch_variable_name" : "switch",# + chr(ord('a') + i), 
-                "hostname": "host-" + chr(ord('a') + i), 
+                "hostname": hostname, 
                 "host_variable_name" : "host" + chr(ord('a') + i), 
                 "portname": portname,
-                "ip" : "192.168." + "0." + str(i + 1)
+                "ip" : "192.168." + "0." + str(i + 1),
+                "bandwidth": bandwidth,
+                "delay": delay
             })
 
     # Import empty template to be populated with components
