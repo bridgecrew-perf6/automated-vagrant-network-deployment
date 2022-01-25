@@ -1,5 +1,6 @@
 # Startup commands for ${hostname} go here
 sudo apt update
+sudo apt install iperf3 -y
 sudo ip link set ${portname} up
 echo "${hostname} -> net set up..\n"
 sudo /bin/su -c \
@@ -16,3 +17,17 @@ EOF
 echo "${hostname} -> static IP set..\n"
 sudo netplan apply
 echo "${hostname} -> Route add..\n"
+
+DELAY_MS=${delay}
+RATE_MBIT=${bandwidth}
+BUF_PKTS=33
+BDP_BYTES=$(echo "($DELAY_MS/1000.0)*($RATE_MBIT*1000000.0/8.0)" | bc -q -l)
+BDP_PKTS=$(echo "$BDP_BYTES/1500" | bc -q)
+LIMIT_PKTS=$(echo "$BDP_PKTS+$BUF_PKTS" | bc -q)
+if [ "${RATE_MBIT}" -gt 0 ]
+then
+    sudo tc qdisc replace dev enp0s8 root netem delay ${DELAY_MS}ms rate ${RATE_MBIT}Mbit limit ${LIMIT_PKTS}
+else
+    sudo tc qdisc replace dev enp0s8 root netem delay ${DELAY_MS}ms
+fi
+echo "${hostname} -> Rate and delay control add..\n"
