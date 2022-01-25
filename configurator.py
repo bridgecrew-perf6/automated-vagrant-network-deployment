@@ -56,19 +56,21 @@ def generate_switch_sh_files(n_hosts, n_switches, names):
             bridge += bridge_conf.substitute(**names[j]) + "\n"
         bridge += insert2.substitute(**names[i])
         gen_sh += bridge
-        export_config(gen_sh, "generated_topology/" + names[i]["switch_variable_name"] + ".sh")
+        export_config(gen_sh, "generated_topology/" + names[i]["switchname"] + ".sh")
 
-def generate_switch_always_file(n_hosts, names):
+def generate_switch_always_files(n_hosts, n_switches, names):
     # Every time when switch give up, power on link (Interesting behaviour: If method called as first, it overwrites the global variable)
     config = string.Template("sudo ip link set ${portname} up")
     gen_conf = ""
     for i in range(0, n_hosts):
         gen_conf += config.substitute(**names[i]) + "\n"
-    export_config(gen_conf, "generated_topology/switch_always.sh")
+    
+    for i in range(0, n_switches):
+        export_config(gen_conf, "generated_topology/" + names[i]["switchname"] + "_always.sh")
 
 def generate_external_files(n_hosts, n_switches, names):
 
-    generate_switch_always_file(n_hosts, names)
+    generate_switch_always_files(n_hosts, n_switches, names)
     generate_switch_sh_files(n_hosts, n_switches, names)
     generate_host_sh_files(n_hosts, names)
     generate_common_sh_file()
@@ -101,10 +103,10 @@ def generate_component_templates(n_hosts, n_switches, names):
         for j in range(0, n_hosts):
             # Substituting the port number with the host number
             port = port_template.substitute(**names[j]) + "\n    "
-            # Substituting the switch variable name as it would be wrong due to indexing
-            port_name = names[i]["switch_variable_name"]
-            port = port_name + port[10:]
-            gen_ports += port
+            # # Substituting the switch variable name as it would be wrong due to indexing
+            # port_name = names[i]["switch_variable_name"]
+            # port = port_name + port[10:]
+            gen_ports += port[4:]
 
         #Gen_ports is GOOD
         # switch_text is not good.
@@ -131,10 +133,10 @@ if __name__ == "__main__":
     n_hosts = int(n_hosts) if n_hosts != '' else 2
 
     # Ask user for number of switches
-    # n_switches = input("Enter number of hosts: (Default=2) ")
-    # n_switches = int(n_switches) if n_switches != '' else 1
+    n_switches = input("Enter number of switches: (Default=1) ")
+    n_switches = int(n_switches) if n_switches != '' else 1
     # n_hosts = 2
-    n_switches = 1
+    # n_switches = 1
 
     # Generate host names ( {'hostname1': 'host-a', 'hostname2': 'host-b'} )
     names = []
