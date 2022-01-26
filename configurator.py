@@ -65,6 +65,9 @@ def generate_switch_sh_files(n_hosts, n_switches, names, port_owners):
     bridge_conf = string.Template("sudo ovs-vsctl add-port my_bridge ${portname}")
     insert2 = string.Template("echo \"${switchname} -> Port assign to VLAN..\\n\"")
 
+    if n_switches > 1: 
+        port_owners = [port + 1 for port in port_owners]
+
     for i in range(0, n_switches):
         gen_sh = switch_sh_template.substitute(**names[i])
 
@@ -81,9 +84,12 @@ def generate_switch_always_files(n_hosts, n_switches, names, port_owners):
     config = string.Template("sudo ip link set ${portname} up")
     gen_router = ""
     
+    if n_switches > 1: 
+        port_owners = [port + 1 for port in port_owners]
+
     for i in range(0, n_switches):
         gen_conf = ""
-        for j in range(0, port_owners[i] + 1): # +1 for the router
+        for j in range(0, port_owners[i]): # +1 for the router
             gen_conf += config.substitute(**names[j]) + "\n"
         export_config(gen_conf, "generated_topology/" + names[i]["switchname"] + "_always.sh")
         gen_router += config.substitute(**names[i]) + "\n"
@@ -289,19 +295,14 @@ if __name__ == "__main__":
     # Import empty template to be populated with components
     template = import_template()
     
+    # Generate components (Routers, Switches, Hosts)
+    # Adding components to the config template
     if n_switches > 1:
-        # Generate components (Routers, Switches, Hosts)
         gen_router, gen_promises, gen_hosts, gen_switches = generate_component_templates(n_hosts, n_switches, names, port_owners)
-
-        # Adding components to the config template
         data = {'router': gen_router, 'promises': gen_promises, 'hosts': gen_hosts, 'switches': gen_switches}
     else:
-        # Generate components (Routers, Switches, Hosts)
         gen_promises, gen_hosts, gen_switches = generate_component_templates(n_hosts, n_switches, names, port_owners)
-
-        # Adding components to the config template
         data = {'router': "", 'promises': gen_promises, 'hosts': gen_hosts, 'switches': gen_switches}
-
 
     final_config = template.substitute(**data)
 
