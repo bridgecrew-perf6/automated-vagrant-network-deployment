@@ -103,10 +103,18 @@ def generate_external_files(n_hosts, n_switches, names):
     
 def generate_component_templates(n_hosts, n_switches, names, port_owners):
     
-    # Generating porimsenames
+    # Generating Virtual Network Interfaces
     promise = string.Template("vb.customize [\"modifyvm\", :id, \"--${promisename}\", \"allow-all\"]")
     gen_promises = ""
-    for i in range(0, n_hosts):
+    # The limiting factor is the maximum number of hosts connected to a switch
+    if n_switches < max(port_owners):
+        n = max(port_owners)
+        if n_switches > 1: n += 1
+    # The limiting factor is the number of switches
+    else:
+        n = n_switches
+
+    for i in range(0, n):
         gen_promise = promise.substitute(**{"promisename" : "nicpromisc" + str(i+2)})
         gen_promises += "    " + gen_promise + "\n"
 
