@@ -29,7 +29,6 @@ def export_config(config, fpath="generated_topology/Vagrantfile"):
     output.close()
 
 def generate_host_sh_files(n_hosts, names, port_owners):
-    # TODO Set IP address depending on whcih network the host belongs to.
     host_sh_template = import_template("configurator_templates/host_sh_template")
     hostnames = []
     counter = 0
@@ -208,13 +207,13 @@ if __name__ == "__main__":
         if i >= 3: portname = "enp0s" + str(i+8+5)
         else: portname = "enp0s" + str(i+8)
 
-        #TODO Outsource it from here so router wont have dealy configuratable
-        hostname = "host-" + chr(ord('a') + i)
-        print("Configure link capacity for {}".format(hostname))
-        bandwidth = input("Bandwidth in Mbit/s (Max = 200 Mbit/s, ENTER for no limit) : ")
-        bandwidth = int(bandwidth) if bandwidth != '' else 0
-        delay = input("Network delay (Default = 0ms) : \n")
-        delay = int(delay) if delay != '' else 0
+        if i < n_hosts:
+            hostname = "host-" + chr(ord('a') + i)
+            print("Configure link capacity for {}".format(hostname))
+            bandwidth = input("Bandwidth in Mbit/s (Max = 200 Mbit/s, ENTER for no limit) : ")
+            bandwidth = int(bandwidth) if bandwidth != '' else 0
+            delay = input("Network delay (Default = 0ms) : \n")
+            delay = int(delay) if delay != '' else 0
 
         names.append({
                 "switchname": "switch-" + chr(ord('a') + i), 
