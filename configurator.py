@@ -186,7 +186,10 @@ if __name__ == "__main__":
     if int(n_switches) < 1 or int(n_switches) > 6:
         print("Number of switches must be between 1 and 6")
         exit()
-
+    if int(n_switches) > 1:
+        print("A router has been created, generating a TREE Topology")
+    else:
+        print("Generating a STAR Topology")
     # Ask user for number of hosts
     n_hosts = input("Enter number of hosts: (Default=4, Min=2, Max=" + str(6 * n_switches) + ") ")
     n_hosts = int(n_hosts) if n_hosts != '' else 4
