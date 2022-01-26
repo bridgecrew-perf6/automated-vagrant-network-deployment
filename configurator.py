@@ -35,7 +35,7 @@ def generate_host_sh_files(n_hosts, names):
         hostnames.append(names[i]["hostname"])
         names[i]["hostname"] = names[i]["hostname"].replace("_", "-")
         names[i]["portname"] = "enp0s8"
-        gen_sh = host_sh_template.substitute(**names[i])
+        gen_sh = host_sh_template.safe_substitute(**names[i])
         export_config(gen_sh, "generated_topology/" + hostnames[i] + ".sh")
 
 def generate_common_sh_file():
@@ -58,15 +58,21 @@ def generate_switch_sh_files(n_hosts, n_switches, names, port_owners):
         gen_sh += bridge
         export_config(gen_sh, "generated_topology/" + names[i]["switchname"] + ".sh")
 
+
 def generate_switch_always_files(n_hosts, n_switches, names, port_owners):
     # Every time when switch give up, power on link (Interesting behaviour: If method called as first, it overwrites the global variable)
     config = string.Template("sudo ip link set ${portname} up")
+    gen_router = ""
     
     for i in range(0, n_switches):
         gen_conf = ""
-        for j in range(0, port_owners[i]):
+        for j in range(0, port_owners[i] + 1): # +1 for the router
             gen_conf += config.substitute(**names[j]) + "\n"
         export_config(gen_conf, "generated_topology/" + names[i]["switchname"] + "_always.sh")
+        gen_router += config.substitute(**names[i]) + "\n"
+    gen_router += "sudo iptables -P FORWARD ACCEPT"
+    export_config(gen_router, "generated_topology/router_always.sh")
+    
 
 def generate_external_files(n_hosts, n_switches, names):
 
@@ -92,6 +98,19 @@ def generate_component_templates(n_hosts, n_switches, names, port_owners):
     # Aligning the code by removing fist 2 spaces
     gen_hosts = gen_hosts[2:]
 
+    # Generating Router
+    router_template, router_text = import_template("configurator_templates/switch_template", True)
+    gen_router_ports = ""
+    for i in range(0, n_switches):
+        port_template, port_text = import_template("configurator_templates/port_template", True)
+        router_port_t = {"hostname": names[i]["switchname"], "portname": names[i]["portname"], "switch_variable_name": "router"}
+        gen_router_ports += port_template.substitute(**router_port_t) + "\n"
+    gen_router_ports = gen_router_ports[4:]
+
+    router_text = router_text.replace("${ports}", gen_router_ports)
+    router_template = string.Template(router_text)
+    router_config = {"switchname" : "router", "switch_variable_name" : "router"}
+    gen_router = router_template.substitute(**router_config)
 
     # Generating Switches
     gen_switches = ""
@@ -104,16 +123,20 @@ def generate_component_templates(n_hosts, n_switches, names, port_owners):
         for j in range(0, port_owners[i]):
             # Generating Switch Ports
             port_template, port_text = import_template("configurator_templates/port_template", True)
-            
-            # print("host: broadcast_" + names[host_counter]["hostname"] + " is connnected on port " + names[port_counter]["portname"])
             port_t = {"hostname": names[host_counter]["hostname"], "portname": names[port_counter]["portname"], "switch_variable_name": "switch"}
             host_counter += 1
             port_counter += 1
             
-            #  Substituting the port number with the host number
+            # Substituting the port number with the host number
             port = port_template.substitute(**port_t) + "\n    "
             gen_ports += port[4:]
-
+            
+        # Add Router connection
+        port_template = import_template("configurator_templates/port_template")
+        # TODO WRONG LINE BELOW
+        port_t = {"hostname": names[i]["switchname"], "portname": names[port_counter]["portname"], "switch_variable_name": "switch"}
+        port = port_template.substitute(**port_t) + "\n"
+        gen_ports += port[4:]
         switch_text = switch_text.replace("${ports}", gen_ports)
         switch_template = string.Template(switch_text)
         gen_switches += switch_template.substitute(**names[i])
@@ -123,18 +146,18 @@ def generate_component_templates(n_hosts, n_switches, names, port_owners):
 
     # Generate and configure file for each component
     generate_external_files(n_hosts, n_switches, names)
-    return gen_promises, gen_hosts, gen_switches
+    return gen_router, gen_promises, gen_hosts, gen_switches
 
 
 if __name__ == "__main__":
 
     os.system('cls')
     Path("generated_topology").mkdir(parents=True, exist_ok=True)
-    print("Starting configurator script")
+    print("---Starting network configurator script---\n\n")
 
     # Ask user for number of hosts
-    n_hosts = input("Enter number of hosts: (Default=4) ")
-    n_hosts = int(n_hosts) if n_hosts != '' else 4
+    n_hosts = input("Enter number of hosts: (Default=2) \n")
+    n_hosts = int(n_hosts) if n_hosts != '' else 2
 
     # Ask user for number of switches
     n_switches = input("Enter number of switches: (Default=2) ")
@@ -155,28 +178,37 @@ if __name__ == "__main__":
 
     # Generate host names ( {'hostname1': 'host-a', 'hostname2': 'host-b'} )    
     names = []
-    for i in range(0, n_hosts):
+    for i in range(0, n_hosts + 1): # +1 for router
         
         if i >= 3: portname = "enp0s" + str(i+8+5)
         else: portname = "enp0s" + str(i+8)
-        
+
+        hostname = "host-" + chr(ord('a') + i)
+        print("Configure link capacity for {}".format(hostname))
+        bandwidth = input("Bandwidth in Mbit/s (Max = 200 Mbit/s, ENTER for no limit) : ")
+        bandwidth = int(bandwidth) if bandwidth != '' else 0
+        delay = input("Network delay (Default = 0ms) : \n")
+        delay = int(delay) if delay != '' else 0
+
         names.append({
                 "switchname": "switch-" + chr(ord('a') + i), 
-                "switch_variable_name" : "switch",# + chr(ord('a') + i), 
+                "switch_variable_name" : "switch",
                 "hostname": "host-" + chr(ord('a') + i), 
                 "host_variable_name" : "host" + chr(ord('a') + i), 
                 "portname": portname,
-                "ip" : "192.168." + "0." + str(i + 1)
+                "ip" : "192.168." + "0." + str(i + 1),
+                "bandwidth": bandwidth,
+                "delay": delay
             })
 
     # Import empty template to be populated with components
     template = import_template()
     
     # Generate components (Routers, Switches, Hosts)
-    gen_promises, gen_hosts, gen_switches = generate_component_templates(n_hosts, n_switches, names, port_owners)
+    gen_router, gen_promises, gen_hosts, gen_switches = generate_component_templates(n_hosts, n_switches, names, port_owners)
 
     # Adding components to the config template
-    data = {'promises': gen_promises, 'hosts': gen_hosts, 'switches': gen_switches}
+    data = {'router': gen_router, 'promises': gen_promises, 'hosts': gen_hosts, 'switches': gen_switches}
     final_config = template.substitute(**data)
 
     # Removing empty lines
