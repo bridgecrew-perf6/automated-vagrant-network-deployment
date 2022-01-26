@@ -40,6 +40,7 @@ def generate_host_sh_files(n_hosts, names, port_owners):
             names[counter]["portname"] = "enp0s8"
             # Setting IP
             names[counter]["ip"] = "192.168."+ str(i) +"." + str(j + 2)
+            names[counter]["gateway"] = "192.168."+ str(i) +".1"
             gen_sh = host_sh_template.safe_substitute(**names[counter])
             export_config(gen_sh, "generated_topology/" + hostnames[counter] + ".sh")
             counter += 1
@@ -223,6 +224,7 @@ if __name__ == "__main__":
                 "portname": portname,
                 "ip" : "192.168." + "0." + str(i + 2),
                 "router_ip" : "192.168." + str(i) + ".1",
+                "gateway" : "192.168." + str(i) + ".1",
                 "bandwidth": bandwidth,
                 "delay": delay
             })

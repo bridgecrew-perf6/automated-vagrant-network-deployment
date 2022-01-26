@@ -11,6 +11,7 @@ network:
            dhcp4: false
            addresses:
            - ${ip}/24
+           gateway4: ${gateway}
    version: 2
 EOF
 "
