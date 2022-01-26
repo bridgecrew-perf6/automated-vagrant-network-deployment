@@ -235,10 +235,31 @@ if __name__ == "__main__":
         if i < n_hosts:
             hostname = "host-" + chr(ord('a') + i)
             print("Configure link capacity for {}".format(hostname))
-            bandwidth = input("Bandwidth in Mbit/s (Max = 200 Mbit/s, ENTER for no limit) : ")
-            bandwidth = int(bandwidth) if bandwidth != '' else 0
-            delay = input("Network delay (Default = 0ms) : \n")
-            delay = int(delay) if delay != '' else 0
+            valid_input = False
+            while valid_input == False:
+                bandwidth = input("Bandwidth in Mbit/s (Max = 200 Mbit/s, ENTER for no limit) : ")
+                if bandwidth != '':
+                    bandwidth = int(bandwidth)
+                    if bandwidth < 0 or bandwidth > 200:
+                        print("Please enter a valid value!")
+                    else:
+                        valid_input = True
+                else:
+                    bandwidth = 0
+                    valid_input = True
+
+            valid_input = False
+            while valid_input == False:
+                delay = input("Network delay (Default = 0ms) : \n")
+                if delay != '':
+                    delay = int(delay)
+                    if delay < 0 or delay > 10000:
+                        print("Please enter a valid value!")
+                    else:
+                        valid_input = True
+                else:
+                    delay = 0
+                    valid_input = True
 
         names.append({
                 "switchname": "switch-" + chr(ord('a') + i), 
