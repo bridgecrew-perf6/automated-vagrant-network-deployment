@@ -179,26 +179,51 @@ if __name__ == "__main__":
     Path("generated_topology").mkdir(parents=True, exist_ok=True)
     print("---Starting network configurator script---\n\n")
 
-    # Ask user for number of hosts
-    n_hosts = input("Enter number of hosts: (Default=2) ")
-    n_hosts = int(n_hosts) if n_hosts != '' else 2
-
     # Ask user for number of switches
-    n_switches = input("Enter number of switches: (Default=2) ")
+    n_switches = input("Enter number of switches: (Default=2, Min=1, Max=6) ")
     n_switches = int(n_switches) if n_switches != '' else 2
+    actual_switch = 1
+    if int(n_switches) < 1 or int(n_switches) > 6:
+        print("Number of switches must be between 1 and 6")
+        exit()
 
-    if n_switches == 1:
-        port_owners = [n_hosts]
-    elif n_switches == 2:
-        n_hosts_of_switch_a = int(input("Enter number of hosts connected to switch_a: (Free hosts remaining: " + str(n_hosts) + ") "))
-        if n_hosts_of_switch_a > n_hosts:
-            print("Number of hosts connected to switch_a is greater than the number of requested hosts!")
-            print("Note: All the hosts are connected to switch_a...")
-            n_hosts_of_switch_a = n_hosts
-            n_hosts_of_switch_b = 0
-        else: n_available_hosts = n_hosts - n_hosts_of_switch_a
-        n_hosts_of_switch_b = n_available_hosts
-        port_owners = [n_hosts_of_switch_a, n_hosts_of_switch_b]
+    # Ask user for number of hosts
+    n_hosts = input("Enter number of hosts: (Default=4, Min=2, Max=" + str(6 * n_switches) + ") ")
+    n_hosts = int(n_hosts) if n_hosts != '' else 4
+    unasigned_hosts = n_hosts
+    if int(n_hosts) < 2 or int(n_hosts) > (6 * n_switches):
+        print("Number of hosts must be between 2 and " + str(6 * n_switches) + ", exiting")
+        exit()
+
+    if n_switches == 1: port_owners = [n_hosts]
+    else:
+        port_owners = []
+        while unasigned_hosts > 0 and actual_switch <= n_switches:
+            if actual_switch == n_switches:
+                if unasigned_hosts < 6:
+                    port_owners.append(unasigned_hosts)
+                    unasigned_hosts = 0
+                    print("The rest hosts are assigned to switch " + str(actual_switch))
+                else:
+                    print("Error: More than 6 hosts assigned to the last switch, exiting")
+                    exit()
+            else:
+                n_ports = input("Enter number of ports for switch " + str(actual_switch) + ": (Default= " + str(min(2, unasigned_hosts)) +", Min=1, Max=" + str(min(6, unasigned_hosts)) + ") ")
+                if n_ports == '':
+                    n_ports = min(2, unasigned_hosts)
+                    print("Assigned " + str(n_ports) + " ports to switch " + str(actual_switch))
+                elif int(n_ports) > min(6, unasigned_hosts):
+                    print("You have requested more hosts then available, assigning " + str(min(6, unasigned_hosts)) + " ports to the" + str(actual_switch) + " switch")
+                    n_ports = min(6, unasigned_hosts)
+                else:
+                    n_ports = int(n_ports)
+                
+                port_owners.append(n_ports)
+                unasigned_hosts -= n_ports
+                if unasigned_hosts == 0:
+                    for i in range(actual_switch, n_switches):
+                        port_owners.append(0)
+                actual_switch += 1        
 
     # Generate host names ( {'hostname1': 'host-a', 'hostname2': 'host-b'} )    
     names = []
