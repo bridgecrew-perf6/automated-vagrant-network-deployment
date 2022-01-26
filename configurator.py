@@ -208,7 +208,7 @@ if __name__ == "__main__":
                     print("Error: More than 6 hosts assigned to the last switch, exiting")
                     exit()
             else:
-                n_ports = input("Enter number of ports for switch " + str(actual_switch) + ": (Default= " + str(min(2, unasigned_hosts)) +", Min=1, Max=" + str(min(6, unasigned_hosts)) + ") ")
+                n_ports = input("Enter number of hots connected to switch " + str(actual_switch) + ": (Default= " + str(min(2, unasigned_hosts)) +", Min=1, Max=" + str(min(6, unasigned_hosts)) + ") ")
                 if n_ports == '':
                     n_ports = min(2, unasigned_hosts)
                     print("Assigned " + str(n_ports) + " ports to switch " + str(actual_switch))
