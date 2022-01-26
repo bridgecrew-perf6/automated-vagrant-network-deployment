@@ -222,6 +222,7 @@ if __name__ == "__main__":
                 unasigned_hosts -= n_ports
                 if unasigned_hosts == 0:
                     for i in range(actual_switch, n_switches):
+                        print("There is not any host available to connect to switch" + str(i))
                         port_owners.append(0)
                 actual_switch += 1        
 
