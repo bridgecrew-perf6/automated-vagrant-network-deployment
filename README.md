@@ -1,5 +1,9 @@
 # automated-vagrant-network-deployment
 
+This is the github repository used for the group project of Next Generation Networks related to automated-vagrant-network-deployment.
+
+In this `README.md` you can find the required steps to execute the program.
+
 ## Running the program
 User will be able to provide network configuration parameters based on the script prompts.
 To run the program:
