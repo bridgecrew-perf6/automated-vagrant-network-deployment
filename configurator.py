@@ -177,7 +177,7 @@ if __name__ == "__main__":
 
     os.system('cls')
     Path("generated_topology").mkdir(parents=True, exist_ok=True)
-    print("---Starting network configurator script---\n\n")
+    print("---Starting network configurator script---\n")
 
     # Ask user for number of switches
     n_switches = input("Enter number of switches: (Default=2, Min=1, Max=6) ")
@@ -202,8 +202,8 @@ if __name__ == "__main__":
             if actual_switch == n_switches:
                 if unasigned_hosts < 6:
                     port_owners.append(unasigned_hosts)
+                    print("The rest hosts (" + str(unasigned_hosts) + "x) are assigned to switch " + str(actual_switch))
                     unasigned_hosts = 0
-                    print("The rest hosts are assigned to switch " + str(actual_switch))
                 else:
                     print("Error: More than 6 hosts assigned to the last switch, exiting")
                     exit()
@@ -228,7 +228,7 @@ if __name__ == "__main__":
 
     # Generate host names ( {'hostname1': 'host-a', 'hostname2': 'host-b'} )    
     names = []
-    for i in range(0, n_hosts + 1): # +1 for router
+    for i in range(0, max(n_hosts, n_switches) + 1): # +1 for router
         
         if i >= 3: portname = "enp0s" + str(i+8+5)
         else: portname = "enp0s" + str(i+8)
