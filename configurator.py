@@ -28,21 +28,25 @@ def export_config(config, fpath="generated_topology/Vagrantfile"):
         output.write(config)
     output.close()
 
-def generate_host_sh_files(n_hosts, names):
+def generate_host_sh_files(n_hosts, names, port_owners):
     # TODO Set IP address depending on whcih network the host belongs to.
     host_sh_template = import_template("configurator_templates/host_sh_template")
     hostnames = []
-    for i in range(0, n_hosts):
-        hostnames.append(names[i]["hostname"])
-        names[i]["hostname"] = names[i]["hostname"].replace("_", "-")
-        names[i]["portname"] = "enp0s8"
-        # TODO Set IP here
-        gen_sh = host_sh_template.safe_substitute(**names[i])
-        export_config(gen_sh, "generated_topology/" + hostnames[i] + ".sh")
+    counter = 0
+    for i in range(0, len(port_owners)):
+        for j in range(0, port_owners[i]):
+            hostnames.append(names[counter]["hostname"])
+            names[counter]["hostname"] = names[counter]["hostname"].replace("_", "-")
+            names[counter]["portname"] = "enp0s8"
+            # Setting IP
+            names[counter]["ip"] = "192.168."+ str(i) +"." + str(j + 2)
+            gen_sh = host_sh_template.safe_substitute(**names[counter])
+            export_config(gen_sh, "generated_topology/" + hostnames[counter] + ".sh")
+            counter += 1
 
 def generate_router_sh_file(n_switches, names):
     # Generate Ethernet ports of the router
-    eth = string.Template("       ${portname}:\n           dhcp4: false\n           addresses: [${router_ip}/${mask}]\n")
+    eth = string.Template("       ${portname}:\n           dhcp4: false\n           addresses: [${router_ip}/24]\n")
     gen_eth = ""
     for i in range(0, n_switches):
         gen_eth += eth.substitute(**names[i])
@@ -94,7 +98,7 @@ def generate_external_files(n_hosts, n_switches, names):
     if n_switches > 1:
         generate_router_sh_file(n_switches, names)
     generate_switch_sh_files(n_hosts, n_switches, names, port_owners)
-    generate_host_sh_files(n_hosts, names)
+    generate_host_sh_files(n_hosts, names, port_owners)
     generate_common_sh_file()
     
 def generate_component_templates(n_hosts, n_switches, names, port_owners):
@@ -176,7 +180,7 @@ if __name__ == "__main__":
     print("---Starting network configurator script---\n\n")
 
     # Ask user for number of hosts
-    n_hosts = input("Enter number of hosts: (Default=2)")
+    n_hosts = input("Enter number of hosts: (Default=2) ")
     n_hosts = int(n_hosts) if n_hosts != '' else 2
 
     # Ask user for number of switches
@@ -217,9 +221,8 @@ if __name__ == "__main__":
                 "hostname": "host-" + chr(ord('a') + i), 
                 "host_variable_name" : "host" + chr(ord('a') + i), 
                 "portname": portname,
-                "ip" : "192.168." + "0." + str(i + 1),
+                "ip" : "192.168." + "0." + str(i + 2),
                 "router_ip" : "192.168." + str(i) + ".1",
-                "mask" : 24 + i,
                 "bandwidth": bandwidth,
                 "delay": delay
             })
