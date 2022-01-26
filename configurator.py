@@ -29,14 +29,27 @@ def export_config(config, fpath="generated_topology/Vagrantfile"):
     output.close()
 
 def generate_host_sh_files(n_hosts, names):
+    # TODO Set IP address depending on whcih network the host belongs to.
     host_sh_template = import_template("configurator_templates/host_sh_template")
     hostnames = []
     for i in range(0, n_hosts):
         hostnames.append(names[i]["hostname"])
         names[i]["hostname"] = names[i]["hostname"].replace("_", "-")
         names[i]["portname"] = "enp0s8"
+        # TODO Set IP here
         gen_sh = host_sh_template.safe_substitute(**names[i])
         export_config(gen_sh, "generated_topology/" + hostnames[i] + ".sh")
+
+def generate_router_sh_file(n_switches, names):
+    # Generate Ethernet ports of the router
+    eth = string.Template("       ${portname}:\n           dhcp4: false\n           addresses: [${router_ip}/${mask}]\n")
+    gen_eth = ""
+    for i in range(0, n_switches):
+        gen_eth += eth.substitute(**names[i])
+
+    router_sh_template, router_sh_text = import_template("configurator_templates/router_sh_template", text_needed=True)
+    gen_sh = router_sh_text.replace("${eth}", gen_eth)
+    export_config(gen_sh, "generated_topology/router.sh")
 
 def generate_common_sh_file():
     content = "export DEBIAN_FRONTEND=noninteractive\n# Startup commands go here"
@@ -71,12 +84,15 @@ def generate_switch_always_files(n_hosts, n_switches, names, port_owners):
         export_config(gen_conf, "generated_topology/" + names[i]["switchname"] + "_always.sh")
         gen_router += config.substitute(**names[i]) + "\n"
     gen_router += "sudo iptables -P FORWARD ACCEPT"
-    export_config(gen_router, "generated_topology/router_always.sh")
+    if n_switches > 1:
+        export_config(gen_router, "generated_topology/router_always.sh")
     
 
 def generate_external_files(n_hosts, n_switches, names):
 
     generate_switch_always_files(n_hosts, n_switches, names, port_owners)
+    if n_switches > 1:
+        generate_router_sh_file(n_switches, names)
     generate_switch_sh_files(n_hosts, n_switches, names, port_owners)
     generate_host_sh_files(n_hosts, names)
     generate_common_sh_file()
@@ -98,19 +114,20 @@ def generate_component_templates(n_hosts, n_switches, names, port_owners):
     # Aligning the code by removing fist 2 spaces
     gen_hosts = gen_hosts[2:]
 
-    # Generating Router
-    router_template, router_text = import_template("configurator_templates/switch_template", True)
-    gen_router_ports = ""
-    for i in range(0, n_switches):
-        port_template, port_text = import_template("configurator_templates/port_template", True)
-        router_port_t = {"hostname": names[i]["switchname"], "portname": names[i]["portname"], "switch_variable_name": "router"}
-        gen_router_ports += port_template.substitute(**router_port_t) + "\n"
-    gen_router_ports = gen_router_ports[4:]
+    if n_switches > 1:
+        # Generating Router
+        router_template, router_text = import_template("configurator_templates/switch_template", True)
+        gen_router_ports = ""
+        for i in range(0, n_switches):
+            port_template, port_text = import_template("configurator_templates/port_template", True)
+            router_port_t = {"hostname": names[i]["switchname"], "portname": names[i]["portname"], "switch_variable_name": "router"}
+            gen_router_ports += port_template.substitute(**router_port_t) + "\n"
+        gen_router_ports = gen_router_ports[4:]
 
-    router_text = router_text.replace("${ports}", gen_router_ports)
-    router_template = string.Template(router_text)
-    router_config = {"switchname" : "router", "switch_variable_name" : "router"}
-    gen_router = router_template.substitute(**router_config)
+        router_text = router_text.replace("${ports}", gen_router_ports)
+        router_template = string.Template(router_text)
+        router_config = {"switchname" : "router", "switch_variable_name" : "router"}
+        gen_router = router_template.substitute(**router_config)
 
     # Generating Switches
     gen_switches = ""
@@ -131,12 +148,12 @@ def generate_component_templates(n_hosts, n_switches, names, port_owners):
             port = port_template.substitute(**port_t) + "\n    "
             gen_ports += port[4:]
             
-        # Add Router connection
-        port_template = import_template("configurator_templates/port_template")
-        # TODO WRONG LINE BELOW
-        port_t = {"hostname": names[i]["switchname"], "portname": names[port_counter]["portname"], "switch_variable_name": "switch"}
-        port = port_template.substitute(**port_t) + "\n"
-        gen_ports += port[4:]
+        if n_switches > 1:
+            # Add Router connection
+            port_template = import_template("configurator_templates/port_template")
+            port_t = {"hostname": names[i]["switchname"], "portname": names[port_counter]["portname"], "switch_variable_name": "switch"}
+            port = port_template.substitute(**port_t) + "\n"
+            gen_ports += port[4:]
         switch_text = switch_text.replace("${ports}", gen_ports)
         switch_template = string.Template(switch_text)
         gen_switches += switch_template.substitute(**names[i])
@@ -146,7 +163,10 @@ def generate_component_templates(n_hosts, n_switches, names, port_owners):
 
     # Generate and configure file for each component
     generate_external_files(n_hosts, n_switches, names)
-    return gen_router, gen_promises, gen_hosts, gen_switches
+    if n_switches > 1:
+        return gen_router, gen_promises, gen_hosts, gen_switches
+    else:
+        return gen_promises, gen_hosts, gen_switches
 
 
 if __name__ == "__main__":
@@ -156,7 +176,7 @@ if __name__ == "__main__":
     print("---Starting network configurator script---\n\n")
 
     # Ask user for number of hosts
-    n_hosts = input("Enter number of hosts: (Default=2) \n")
+    n_hosts = input("Enter number of hosts: (Default=2)")
     n_hosts = int(n_hosts) if n_hosts != '' else 2
 
     # Ask user for number of switches
@@ -183,6 +203,7 @@ if __name__ == "__main__":
         if i >= 3: portname = "enp0s" + str(i+8+5)
         else: portname = "enp0s" + str(i+8)
 
+        #TODO Outsource it from here so router wont have dealy configuratable
         hostname = "host-" + chr(ord('a') + i)
         print("Configure link capacity for {}".format(hostname))
         bandwidth = input("Bandwidth in Mbit/s (Max = 200 Mbit/s, ENTER for no limit) : ")
@@ -197,6 +218,8 @@ if __name__ == "__main__":
                 "host_variable_name" : "host" + chr(ord('a') + i), 
                 "portname": portname,
                 "ip" : "192.168." + "0." + str(i + 1),
+                "router_ip" : "192.168." + str(i) + ".1",
+                "mask" : 24 + i,
                 "bandwidth": bandwidth,
                 "delay": delay
             })
@@ -204,11 +227,20 @@ if __name__ == "__main__":
     # Import empty template to be populated with components
     template = import_template()
     
-    # Generate components (Routers, Switches, Hosts)
-    gen_router, gen_promises, gen_hosts, gen_switches = generate_component_templates(n_hosts, n_switches, names, port_owners)
+    if n_switches > 1:
+        # Generate components (Routers, Switches, Hosts)
+        gen_router, gen_promises, gen_hosts, gen_switches = generate_component_templates(n_hosts, n_switches, names, port_owners)
 
-    # Adding components to the config template
-    data = {'router': gen_router, 'promises': gen_promises, 'hosts': gen_hosts, 'switches': gen_switches}
+        # Adding components to the config template
+        data = {'router': gen_router, 'promises': gen_promises, 'hosts': gen_hosts, 'switches': gen_switches}
+    else:
+        # Generate components (Routers, Switches, Hosts)
+        gen_promises, gen_hosts, gen_switches = generate_component_templates(n_hosts, n_switches, names, port_owners)
+
+        # Adding components to the config template
+        data = {'router': "", 'promises': gen_promises, 'hosts': gen_hosts, 'switches': gen_switches}
+
+
     final_config = template.substitute(**data)
 
     # Removing empty lines

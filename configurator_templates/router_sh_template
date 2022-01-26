@@ -1,0 +1,20 @@
+# Startup commands for Roouter-1 go here
+sudo apt update
+sudo apt install vlan
+sudo apt install iptables
+# Enable packet forwarding
+sudo /bin/su -c "echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf"
+sudo sysctl -p /etc/sysctl.conf
+# Set static IP addresses
+echo "Router-1 -> net set up..\n"
+sudo /bin/su -c \
+"cat << EOF > /etc/netplan/49-router-1-netConf.yaml
+network:
+   ethernets:
+${eth}
+   version: 2
+EOF
+"
+echo "Router-1 -> static IP set..\n"
+sudo netplan apply
+echo "Router-1 -> Route add..\n"
