@@ -1,11 +1,5 @@
 # automated-vagrant-network-deployment
 
-First version.
-
-two hosts connected to a switch.
-Host-a  > IP: 192.168.0.2	
-Host-b  > IP: 192.168.0.3	
-
 ## Running the program
 User will be able to provide network configuration parameters based on the script prompts.
 To run the program:
