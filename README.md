@@ -1,4 +1,4 @@
-# automated-vagrant-network-deployment
+# Automated Vagrant Network Deployment
 
 This is the github repository used for the group project of Next Generation Networks related to automated-vagrant-network-deployment.
 
@@ -14,4 +14,5 @@ To run the program:
 3. The generated Vagrantfile will be in the `generated_topology` folder. Run the `vagrant up` command from that folder to deploy 
 4. Check the generated VMs are running with `vagrant status` 
 5. Connect to any of the VMs to make tests with `vagrant ssh NAME_OF_THE_VM_TO_CONNECT`
+6. Use `ping` and `iperf3` programs on the hosts to test network delay and bandwidth respectively.
  
